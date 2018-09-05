@@ -7,6 +7,8 @@
 
 import UIKit
 
+public var accessData = [String: Any]()
+
 class LoadingScreen: UIViewController {
 
     // Used for devide ID for OAuth
@@ -45,6 +47,13 @@ class LoadingScreen: UIViewController {
             do {
                 if let json = try JSONSerialization.jsonObject(with: data, options: .mutableContainers) as? [String: Any] {
                     print(json)
+                    accessData = json
+                    
+                    // Now with the access token saved, animate, then segue
+                    DispatchQueue.main.async(execute: {
+                        self.animateIcon()
+                    })
+                    
                     
                 }
             } catch let error {
@@ -67,9 +76,63 @@ class LoadingScreen: UIViewController {
     }
     
     
+    // Create the layout of the launch screen, first list variables used
+    let redditIconImageView = UIImageView()
+    let iconBG = UIView()
+    
+    func createLayout() {
+        
+        let width = self.view.frame.width
+        
+        redditIconImageView.image = #imageLiteral(resourceName: "redditClear")
+        redditIconImageView.contentMode = .scaleAspectFit
+        view.addSubview(redditIconImageView)
+        let centerXImageView = NSLayoutConstraint(item: redditIconImageView, attribute: .centerX, relatedBy: .equal, toItem: view, attribute: .centerX, multiplier: 1.0, constant: 0.0)
+        let centerYImageView = NSLayoutConstraint(item: redditIconImageView, attribute: .centerY, relatedBy: .equal, toItem: view, attribute: .centerY, multiplier: 1.0, constant: 0.0)
+        let widthImageView = redditIconImageView.widthAnchor.constraint(equalToConstant: width*0.5)
+        let heightImageView = redditIconImageView.heightAnchor.constraint(equalTo: redditIconImageView.widthAnchor, multiplier: 1.0)
+        redditIconImageView.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([centerXImageView, centerYImageView, widthImageView, heightImageView])
+        
+        iconBG.backgroundColor = UIColor(red: 237/255, green: 84/255, blue: 41/255, alpha: 1.0)
+        view.addSubview(iconBG)
+        let leftIconBG = NSLayoutConstraint(item: iconBG, attribute: .left, relatedBy: .equal, toItem: redditIconImageView, attribute: .left, multiplier: 1.0, constant: 0.0)
+        let rightIconBG = NSLayoutConstraint(item: iconBG, attribute: .right, relatedBy: .equal, toItem: redditIconImageView, attribute: .right, multiplier: 1.0, constant: 0.0)
+        let topIconBG = NSLayoutConstraint(item: iconBG, attribute: .top, relatedBy: .equal, toItem: redditIconImageView, attribute: .top, multiplier: 1.0, constant: 0.0)
+        let bottomIconBG = NSLayoutConstraint(item: iconBG, attribute: .bottom, relatedBy: .equal, toItem: redditIconImageView, attribute: .bottom, multiplier: 1.0, constant: 0.0)
+        iconBG.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([leftIconBG, rightIconBG, topIconBG, bottomIconBG])
+        
+        
+        view.bringSubview(toFront: redditIconImageView)
+        
+    }
+    
+    
+    func animateIcon() {
+        
+        UIView.animate(withDuration: 1.0, delay: 0.0, options: .curveEaseIn, animations: {
+            
+            self.iconBG.backgroundColor = .black
+            
+        }, completion: { (completed) in
+
+            // segue to app
+            DispatchQueue.main.async(execute: {
+                
+                
+                
+            })
+            
+        })
+    }
+    
+    
     override func viewDidLoad() {
         super.viewDidLoad()
 
+        createLayout()
+        
         getAccessToken()
         
         // Do any additional setup after loading the view.
