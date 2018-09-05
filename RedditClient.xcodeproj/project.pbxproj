@@ -14,6 +14,7 @@
 		27BC89A0213F37C50008A3E3 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 27BC899E213F37C50008A3E3 /* LaunchScreen.storyboard */; };
 		27BC89AB213F37C50008A3E3 /* RedditClientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27BC89AA213F37C50008A3E3 /* RedditClientTests.swift */; };
 		27BC89B6213F37C50008A3E3 /* RedditClientUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27BC89B5213F37C50008A3E3 /* RedditClientUITests.swift */; };
+		27BC89C4213F4D110008A3E3 /* LoadingScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27BC89C3213F4D110008A3E3 /* LoadingScreen.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -47,6 +48,7 @@
 		27BC89B1213F37C50008A3E3 /* RedditClientUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RedditClientUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		27BC89B5213F37C50008A3E3 /* RedditClientUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RedditClientUITests.swift; sourceTree = "<group>"; };
 		27BC89B7213F37C50008A3E3 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		27BC89C3213F4D110008A3E3 /* LoadingScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingScreen.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -98,6 +100,7 @@
 			isa = PBXGroup;
 			children = (
 				27BC8995213F37C50008A3E3 /* AppDelegate.swift */,
+				27BC89C3213F4D110008A3E3 /* LoadingScreen.swift */,
 				27BC8997213F37C50008A3E3 /* ViewController.swift */,
 				27BC8999213F37C50008A3E3 /* Main.storyboard */,
 				27BC899C213F37C50008A3E3 /* Assets.xcassets */,
@@ -260,6 +263,7 @@
 			files = (
 				27BC8998213F37C50008A3E3 /* ViewController.swift in Sources */,
 				27BC8996213F37C50008A3E3 /* AppDelegate.swift in Sources */,
+				27BC89C4213F4D110008A3E3 /* LoadingScreen.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -428,6 +432,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 44JFX5CKGP;
 				INFOPLIST_FILE = RedditClient/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.kdush.RedditClient;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -443,6 +448,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 44JFX5CKGP;
 				INFOPLIST_FILE = RedditClient/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.kdush.RedditClient;
 				PRODUCT_NAME = "$(TARGET_NAME)";
