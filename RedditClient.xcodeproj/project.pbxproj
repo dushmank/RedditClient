@@ -8,13 +8,13 @@
 
 /* Begin PBXBuildFile section */
 		27BC8996213F37C50008A3E3 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27BC8995213F37C50008A3E3 /* AppDelegate.swift */; };
-		27BC8998213F37C50008A3E3 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27BC8997213F37C50008A3E3 /* ViewController.swift */; };
 		27BC899B213F37C50008A3E3 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 27BC8999213F37C50008A3E3 /* Main.storyboard */; };
 		27BC899D213F37C50008A3E3 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 27BC899C213F37C50008A3E3 /* Assets.xcassets */; };
 		27BC89A0213F37C50008A3E3 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 27BC899E213F37C50008A3E3 /* LaunchScreen.storyboard */; };
 		27BC89AB213F37C50008A3E3 /* RedditClientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27BC89AA213F37C50008A3E3 /* RedditClientTests.swift */; };
 		27BC89B6213F37C50008A3E3 /* RedditClientUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27BC89B5213F37C50008A3E3 /* RedditClientUITests.swift */; };
 		27BC89C4213F4D110008A3E3 /* LoadingScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27BC89C3213F4D110008A3E3 /* LoadingScreen.swift */; };
+		27BC89C6213FA4C60008A3E3 /* TopPosts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27BC89C5213FA4C60008A3E3 /* TopPosts.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -37,7 +37,6 @@
 /* Begin PBXFileReference section */
 		27BC8992213F37C50008A3E3 /* RedditClient.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RedditClient.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		27BC8995213F37C50008A3E3 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
-		27BC8997213F37C50008A3E3 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
 		27BC899A213F37C50008A3E3 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		27BC899C213F37C50008A3E3 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		27BC899F213F37C50008A3E3 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
@@ -49,6 +48,7 @@
 		27BC89B5213F37C50008A3E3 /* RedditClientUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RedditClientUITests.swift; sourceTree = "<group>"; };
 		27BC89B7213F37C50008A3E3 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		27BC89C3213F4D110008A3E3 /* LoadingScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingScreen.swift; sourceTree = "<group>"; };
+		27BC89C5213FA4C60008A3E3 /* TopPosts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TopPosts.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -101,7 +101,7 @@
 			children = (
 				27BC8995213F37C50008A3E3 /* AppDelegate.swift */,
 				27BC89C3213F4D110008A3E3 /* LoadingScreen.swift */,
-				27BC8997213F37C50008A3E3 /* ViewController.swift */,
+				27BC89C5213FA4C60008A3E3 /* TopPosts.swift */,
 				27BC8999213F37C50008A3E3 /* Main.storyboard */,
 				27BC899C213F37C50008A3E3 /* Assets.xcassets */,
 				27BC899E213F37C50008A3E3 /* LaunchScreen.storyboard */,
@@ -261,7 +261,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				27BC8998213F37C50008A3E3 /* ViewController.swift in Sources */,
+				27BC89C6213FA4C60008A3E3 /* TopPosts.swift in Sources */,
 				27BC8996213F37C50008A3E3 /* AppDelegate.swift in Sources */,
 				27BC89C4213F4D110008A3E3 /* LoadingScreen.swift in Sources */,
 			);

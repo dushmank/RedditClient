@@ -84,6 +84,7 @@ class LoadingScreen: UIViewController {
         
         let width = self.view.frame.width
         
+        // redditIconImageView Properties and Contraints
         redditIconImageView.image = #imageLiteral(resourceName: "redditClear")
         redditIconImageView.contentMode = .scaleAspectFit
         view.addSubview(redditIconImageView)
@@ -94,6 +95,7 @@ class LoadingScreen: UIViewController {
         redditIconImageView.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([centerXImageView, centerYImageView, widthImageView, heightImageView])
         
+        // IconBG Properties and Contraints
         iconBG.backgroundColor = UIColor(red: 237/255, green: 84/255, blue: 41/255, alpha: 1.0)
         view.addSubview(iconBG)
         let leftIconBG = NSLayoutConstraint(item: iconBG, attribute: .left, relatedBy: .equal, toItem: redditIconImageView, attribute: .left, multiplier: 1.0, constant: 0.0)
@@ -108,7 +110,7 @@ class LoadingScreen: UIViewController {
         
     }
     
-    
+    // Animated the Icon from Reddit Orange to Black
     func animateIcon() {
         
         UIView.animate(withDuration: 1.0, delay: 0.0, options: .curveEaseIn, animations: {
@@ -120,7 +122,7 @@ class LoadingScreen: UIViewController {
             // segue to app
             DispatchQueue.main.async(execute: {
                 
-                
+                self.performSegue(withIdentifier: "toTopPostsFromLoadingScreen", sender: self)
                 
             })
             
@@ -135,25 +137,12 @@ class LoadingScreen: UIViewController {
         
         getAccessToken()
         
-        // Do any additional setup after loading the view.
     }
 
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
-        // Dispose of any resources that can be recreated.
     }
     
-
-    /*
-    // MARK: - Navigation
-
-    // In a storyboard-based application, you will often want to do a little preparation before navigation
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        // Get the new view controller using segue.destinationViewController.
-        // Pass the selected object to the new view controller.
-    }
-    */
-
 }
 
 // Extenstion to convert the client ID into base 64
