@@ -9,6 +9,8 @@ import UIKit
 
 public var accessData = [String: Any]()
 
+public var expTime = Date()
+
 class LoadingScreen: UIViewController {
 
     // Used for devide ID for OAuth
@@ -48,6 +50,7 @@ class LoadingScreen: UIViewController {
                 if let json = try JSONSerialization.jsonObject(with: data, options: .mutableContainers) as? [String: Any] {
                     print(json)
                     accessData = json
+                    expTime = Date().addingTimeInterval(Double(3600))
                     
                     // Now with the access token saved, animate, then segue
                     DispatchQueue.main.async(execute: {

@@ -6,16 +6,19 @@
 //
 
 import UIKit
+import Photos
+import SafariServices
+
+// Store posts in this array
+public var posts = [Dictionary<String, AnyObject>]()
 
 
 class TopPosts: UIViewController, UICollectionViewDelegateFlowLayout, UICollectionViewDataSource {
-
-    // Store posts in this array
-    var posts = [Dictionary<String, AnyObject>]()
     
     // Cache Downloaded Images
-    let imageCache = NSCache<NSString, UIImage>()
-    
+    let thumbnailCache = NSCache<NSString, UIImage>()
+    let postCache = NSCache<NSString, UIImage>()
+
     // Create the layout of the Top Posts screen, first list variables used
     var navBar = UIView()
     var navTitle = UILabel()
@@ -61,7 +64,7 @@ class TopPosts: UIViewController, UICollectionViewDelegateFlowLayout, UICollecti
         NSLayoutConstraint.activate([navIconLeft, navIconBottom, navIconWidth, navIconHeight])
         
         // navTitle 50
-        navFifty.text = "50"
+        navFifty.text = "0"
         navFifty.textAlignment = .right
         navFifty.font = UIFont(name: "Futura-Bold", size: 36)
         navBar.addSubview(navFifty)
@@ -102,7 +105,7 @@ class TopPosts: UIViewController, UICollectionViewDelegateFlowLayout, UICollecti
         postCollectionView.dataSource = self
         postCollectionView.register(postCell.self, forCellWithReuseIdentifier: "Cell")
         postCollectionView.backgroundColor = UIColor.clear
-        postCollectionView.showsVerticalScrollIndicator = false
+        postCollectionView.showsVerticalScrollIndicator = true
         postCollectionView.alwaysBounceVertical = true
         collectionViewContainer.addSubview(postCollectionView)
         let postCollectionViewLeft = NSLayoutConstraint(item: postCollectionView, attribute: .left, relatedBy: .equal, toItem: collectionViewContainer, attribute: .left, multiplier: 1.0, constant: 0.0)
@@ -161,13 +164,13 @@ class TopPosts: UIViewController, UICollectionViewDelegateFlowLayout, UICollecti
                         let timeFormatted = self.hours(from: timeSince)
                         let thumbnailURL = (children[i]["data"]! as AnyObject)["thumbnail"]! as! String
                         
+                        var imageURL = String()
                         var thumbnailHeight = CGFloat()
                         
-                        if thumbnailURL != "self" {
+                        if thumbnailURL.starts(with: "http") {
                             thumbnailHeight = (children[i]["data"]! as AnyObject)["thumbnail_height"]! as! CGFloat
+                            imageURL = (children[i]["data"]! as AnyObject)["url"]! as! String
                         }
-                        
-
                         
                         var dict = Dictionary<String, AnyObject>()
                         dict["title"] = (title as AnyObject)
@@ -176,31 +179,31 @@ class TopPosts: UIViewController, UICollectionViewDelegateFlowLayout, UICollecti
                         dict["time"] = (timeFormatted as AnyObject)
                         dict["thumbnailURL"] = (thumbnailURL as AnyObject)
                         dict["thumbnailHeight"] = (thumbnailHeight as AnyObject)
+                        dict["imageURL"] = (imageURL as AnyObject)
 
                         
 //                        print(dict)
-                        self.posts.append(dict)
+                        posts.append(dict)
                         
                         // if there is a thumbnail, download and cache it
-                        if thumbnailURL != "default" {
-                            self.donwloadImageFrom(urlString: thumbnailURL)
+                        if thumbnailURL.starts(with: "http") {
+                            self.downloadImage(urlString: thumbnailURL, type: "thumbnail")
                         }
                         
 
                     }
                     
                     DispatchQueue.main.async(execute: {
+                        // update the counter and reload the cells with the new posts
+                        self.navFifty.text = "\(posts.count)"
                         self.postCollectionView.reloadData()
                     })
                     
-                    
-//                    print(self.posts.count)
-                    
-                    if self.posts.count < 50 {
-                        self.getPosts(subreddit: "all", filter: "top", limit: 10, after: after, count: self.posts.count)
+                    // Continue pagination until there are 50 posts
+                    if posts.count < 50 {
+                        self.getPosts(subreddit: "all", filter: "top", limit: 10, after: after, count: posts.count)
                     }
                     
-
                 }
             } catch let error {
                 print(error.localizedDescription)
@@ -217,8 +220,10 @@ class TopPosts: UIViewController, UICollectionViewDelegateFlowLayout, UICollecti
     }
     
     
-    // Download thumbnails and Cache the image
-    func donwloadImageFrom(urlString: String) {
+    // Download image and cache
+    // If the image is a thumbnail, cache and reload cells
+    // If the image is a postimage, cache, and then display the image with the image viewer
+    func downloadImage(urlString: String, type: String) {
         
         let url = URL(string: urlString)
         
@@ -230,16 +235,96 @@ class TopPosts: UIViewController, UICollectionViewDelegateFlowLayout, UICollecti
             }
             
             DispatchQueue.main.async(execute: {
+                
                 let imageToCache = UIImage(data: data!)
                 
-                self.imageCache.setObject(imageToCache!, forKey: urlString as NSString)
+                if type == "thumbnail" {
+                    
+                    self.thumbnailCache.setObject(imageToCache!, forKey: urlString as NSString)
+                    
+                    self.postCollectionView.reloadData()
+                    
+                } else if type == "postimage" {
+                    
+                    self.postCache.setObject(imageToCache!, forKey: urlString as NSString)
+                    
+                    // display image
+                    self.postCollectionView.scrollToItem(at: self.selectedItem, at: .top, animated: true)
+                    self.postCollectionView.reloadData()
+                }
                 
-                self.postCollectionView.reloadData()
             })
             
         }).resume()
     }
     
+    // When an image is tapped, check to see if its a thumbnail or a postimage to get the proper URL
+    // if it is a post image: check cache, if it is cached, view image, if not, download then view
+    // if it is a thumbnail, view image
+    @objc func handleViewImage(cached: Bool, type: String, url: String) {
+        
+        if cached == true {
+            
+            if type == "postimage" {
+                self.postCollectionView.scrollToItem(at: self.selectedItem, at: .top, animated: true)
+                self.postCollectionView.reloadData()
+            } else if type == "thumbnail" {
+                let image = thumbnailCache.object(forKey: url as NSString)
+                handleImageHold(url: url, image: image!, type: "thumbnail")
+            }
+            
+        } else {
+            
+            // download then display image
+            self.downloadImage(urlString: url, type: "postimage")
+        }
+    }
+    
+    // When an image is held down, ask the user if they want to open a link or save the image
+    func handleImageHold(url: String, image: UIImage, type: String) {
+        
+                let alert = UIAlertController(title: "Select", message: "", preferredStyle: .actionSheet)
+                let openLink = UIAlertAction(title: "Open Link", style: .default) { (action) in
+                    self.goTo(urlString: url)
+                }
+        
+                var text = ""
+                if type == "thumbnail" {
+                    text = "Save thumbnail"
+                } else {
+                    text = "Save image"
+                }
+        
+                let saveImage = UIAlertAction(title: "\(text)", style: .default) { (action) in
+                    PHPhotoLibrary.shared().performChanges({
+                        PHAssetChangeRequest.creationRequestForAsset(from: image)
+                    }, completionHandler: { success, error in
+                        if success {
+                            // Success
+                        }
+                        else if error != nil {
+                            // Error
+                        }
+                    })
+                }
+                let cancel = UIAlertAction(title: "Cancel", style: .cancel) { (action) in
+                }
+                alert.addAction(openLink)
+                alert.addAction(saveImage)
+                alert.addAction(cancel)
+                
+                self.present(alert, animated: true) {
+                }
+    }
+    
+    
+    func goTo(urlString: String) {
+            let config = SFSafariViewController.Configuration()
+            config.entersReaderIfAvailable = true
+        let url = URL(string: urlString)
+        let vc = SFSafariViewController(url: url!, configuration: config)
+            present(vc, animated: true)
+    }
     
     
     
@@ -251,7 +336,130 @@ class TopPosts: UIViewController, UICollectionViewDelegateFlowLayout, UICollecti
         
         getPosts(subreddit: "all", filter: "top", limit: 10, after: "", count: 0)
         
+            NotificationCenter.default.addObserver(self, selector: #selector(willEnterForeground), name: .UIApplicationWillEnterForeground, object: nil)
     }
+    
+    override func viewDidAppear(_ animated: Bool) {
+        
+        checkPermission()
+    }
+    
+    // Check to make sure user can save photos to their camera roll
+    func checkPermission() {
+        let photoAuthorizationStatus = PHPhotoLibrary.authorizationStatus()
+        switch photoAuthorizationStatus {
+        case .authorized:
+            print("Access is granted by user")
+        case .notDetermined:
+            PHPhotoLibrary.requestAuthorization({
+                (newStatus) in
+                print("status is \(newStatus)")
+                if newStatus ==  PHAuthorizationStatus.authorized {
+                    /* do stuff here */
+                    print("success")
+                }
+            })
+            print("It is not determined until now")
+        case .restricted:
+            // same same
+            print("User do not have access to photo album.")
+        case .denied:
+            // same same
+            print("User has denied the permission.")
+        }
+    }
+    
+    
+    @objc func willEnterForeground() {
+        
+        // Clear old posts
+        posts.removeAll(keepingCapacity: true)
+        self.navFifty.text = "0"
+        postCollectionView.reloadData()
+        
+        let now = Date().timeIntervalSince1970
+        let exp = expTime.timeIntervalSince1970
+        
+        // Check if the access token is expired
+        if now >= exp {
+            // get new access token before refreshing posts
+            reloadSession()
+        } else {
+            // access token is valid, refresh posts
+            getPosts(subreddit: "all", filter: "top", limit: 10, after: "", count: 0)
+        }
+    }
+    
+    
+    
+    func reloadSession() {
+        
+        // Used for devide ID for OAuth
+        let uuid = UUID().uuidString
+        
+        // client ID to be used for oAuth
+        let clientIDFormatted = "z61cQmzN3G2_UA:".toBaseSixtyFour()
+        
+        // app only grant type
+        let grantType = "https://oauth.reddit.com/grants/installed_client"
+        
+        let params = ["grant_type": grantType, "device_id": uuid]
+        
+        let url = URL(string: "https://www.reddit.com/api/v1/access_token")!
+        
+        let session = URLSession.shared
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        let paramsString = self.toParamsString(params: params)
+        request.httpBody = paramsString.data(using: .utf8)
+        
+        request.addValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+        request.addValue("Basic \(clientIDFormatted)", forHTTPHeaderField: "Authorization")
+        
+        let task = session.dataTask(with: request as URLRequest, completionHandler: { data, response, error in
+            guard error == nil else {
+                return
+            }
+            guard let data = data else {
+                return
+            }
+            do {
+                if let json = try JSONSerialization.jsonObject(with: data, options: .mutableContainers) as? [String: Any] {
+                    print(json)
+                    accessData = json
+                    expTime = Date().addingTimeInterval(Double(3600))
+                    
+                    // Now with the access token refreshed, load posts
+                    DispatchQueue.main.async(execute: {
+                        self.getPosts(subreddit: "all", filter: "top", limit: 10, after: "", count: 0)
+                    })
+                    
+                    
+                }
+            } catch let error {
+                print(error.localizedDescription)
+            }
+        })
+        
+        task.resume()
+        
+    }
+    
+    
+    // convert dictionary into post params string
+    func toParamsString(params:[String:Any]) -> String
+    {
+        var data = [String]()
+        for(key, value) in params
+        {
+            data.append(key + "=\(value)")
+        }
+        return data.map { String($0) }.joined(separator: "&")
+    }
+
+    
+    
+    
 
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
@@ -268,55 +476,118 @@ class TopPosts: UIViewController, UICollectionViewDelegateFlowLayout, UICollecti
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         // the count of posts as more posts load
-        return self.posts.count
+        return posts.count
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "Cell", for: indexPath) as! postCell
 
-        cell.titleLabel.text = (self.posts[indexPath.item]["title"]! as! String)
+        cell.titleLabel.text = (posts[indexPath.item]["title"]! as! String)
         
-        cell.authorLabel.text =  "by: \(self.posts[indexPath.item]["author"]! as! String)"
+        cell.authorLabel.text =  "by: \(posts[indexPath.item]["author"]! as! String)"
         
-        cell.commentLabel.text = "\(self.posts[indexPath.item]["comment"]! as! Int)"
+        cell.commentLabel.text = "\(posts[indexPath.item]["comment"]! as! Int)"
         
-        if self.posts[indexPath.item]["time"] as! Int == 1 {
-            cell.timeLabel.text = "\(self.posts[indexPath.item]["time"] as! Int) hour ago"
+        if posts[indexPath.item]["time"] as! Int == 1 {
+            cell.timeLabel.text = "\(posts[indexPath.item]["time"] as! Int) hour ago"
         } else {
-            cell.timeLabel.text = "\(self.posts[indexPath.item]["time"] as! Int) hours ago"
+            cell.timeLabel.text = "\(posts[indexPath.item]["time"] as! Int) hours ago"
         }
         
-        let urlString = self.posts[indexPath.item]["thumbnailURL"]! as! String
+        let thumbnailURL = posts[indexPath.item]["thumbnailURL"]! as! String
+        let fullImageURL = posts[indexPath.item]["imageURL"]! as! String
         
-        if urlString != "default" {
-            cell.postImageView.image = imageCache.object(forKey: urlString as NSString)
+        if thumbnailURL.starts(with: "http") {
+            
+            if self.selectedItem == indexPath {
+                if postCache.object(forKey: fullImageURL as NSString) != nil {
+                    cell.postImageView.image = postCache.object(forKey: fullImageURL as NSString)
+                } else {
+                    cell.postImageView.image = thumbnailCache.object(forKey: thumbnailURL as NSString)
+                }
+                
+            } else {
+                cell.postImageView.image = thumbnailCache.object(forKey: thumbnailURL as NSString)
+            }
+            
         } else {
             cell.postImageView.image = UIImage()
         }
         
         
+        if cell.postImageView.image?.size != CGSize.zero {
+            
+            cell.postImageView.addTapGestureRecognizer(action: {
+                
+                var cached = Bool()
+                var type = String()
+                var url = String()
+                
+                if fullImageURL.contains(".jpg") == true {
+                    // use full image url, check if cached
+                    if self.postCache.object(forKey: fullImageURL as NSString) != nil {
+                        cached = true
+                        type = "postimage"
+                        url = fullImageURL
+                    } else {
+                        cached = false
+                        type = "postimage"
+                        url = fullImageURL
+                    }
+                } else {
+                    // use thumbnail, already cached
+                    cached = true
+                    type = "thumbnail"
+                    url = thumbnailURL
+                }
+                
+                self.selectedItem = indexPath
+                if type == "postimage" {
+                    collectionView.reloadData()
+                }
+                self.handleViewImage(cached: cached, type: type, url: url)
+            })
+            
+            cell.postImageView.addHoldGestureRecognizer(action: {
+                
+                if indexPath == self.selectedItem {
+                    self.handleImageHold(url: fullImageURL, image: cell.postImageView.image!, type: "postimage")
+                } else {
+                    self.handleImageHold(url: fullImageURL, image: cell.postImageView.image!, type: "thumbnail")
+                }
+                
+            })
+            
+        }
+        
         return cell
     }
     
+    var selectedItem = IndexPath()
     
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
         
-        let titleHeight = (self.posts[indexPath.item]["title"]! as! String).height(withConstrainedWidth: self.view.frame.width*0.8, font: postCell().titleLabel.font!)
+        let titleHeight = (posts[indexPath.item]["title"]! as! String).height(withConstrainedWidth: self.view.frame.width*0.8, font: postCell().titleLabel.font!)
         
-        let urlString = self.posts[indexPath.item]["thumbnailURL"]! as! String
+        let urlString = posts[indexPath.item]["thumbnailURL"]! as! String
         
-        if urlString != "default" {
+        if urlString.starts(with: "http") {
             
-            let imageHeight = self.posts[indexPath.item]["thumbnailHeight"]! as! CGFloat
-            
-            return CGSize(width: self.view.frame.width, height: 100+titleHeight+imageHeight)
-            
+            let imageHeight = posts[indexPath.item]["thumbnailHeight"]! as! CGFloat
+
+            if indexPath == self.selectedItem {
+                return CGSize(width: self.view.frame.width, height: self.collectionViewContainer.frame.height-20)
+            } else {
+                return CGSize(width: self.view.frame.width, height: 100+titleHeight+imageHeight)
+            }
+
         } else {
             return CGSize(width: self.view.frame.width, height: 100+titleHeight)
         }
         
     }
     
+
 
     // When deived orientation changes, change the flowLayout
     override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
@@ -459,6 +730,7 @@ class postCell: UICollectionViewCell {
 
 
 
+
 // Get the size of a string with a selected font
 // Used for UILabels to determine the width/height
 extension String {
@@ -484,4 +756,88 @@ extension String {
         return ceil(boundingBox.width)
     }
 }
+
+
+// Quick tap gesture for adding actions to an imageview in a collection view cell
+// Used to expand the cell to reveal the full image of a thumbnail if there is a full image
+// Allows for skipping selector, can be used in cellforitem
+extension UIImageView {
+    
+    fileprivate struct AssociatedObjectKeys {
+        static var tapGestureRecognizer = "MediaViewerAssociatedObjectKey_mediaViewer"
+    }
+    
+    fileprivate typealias Action = (() -> Void)?
+    
+    fileprivate var tapGestureRecognizerAction: Action? {
+        set {
+            if let newValue = newValue {
+                objc_setAssociatedObject(self, &AssociatedObjectKeys.tapGestureRecognizer, newValue, objc_AssociationPolicy.OBJC_ASSOCIATION_RETAIN)
+            }
+        }
+        get {
+            let tapGestureRecognizerActionInstance = objc_getAssociatedObject(self, &AssociatedObjectKeys.tapGestureRecognizer) as? Action
+            return tapGestureRecognizerActionInstance
+        }
+    }
+    
+    public func addTapGestureRecognizer(action: (() -> Void)?) {
+        self.isUserInteractionEnabled = true
+        self.tapGestureRecognizerAction = action
+        let tapGestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(handleTapGesture))
+        self.addGestureRecognizer(tapGestureRecognizer)
+    }
+    
+    @objc fileprivate func handleTapGesture(sender: UITapGestureRecognizer) {
+        if let action = self.tapGestureRecognizerAction {
+            action?()
+        } else {
+            print("no action")
+        }
+    }
+    
+}
+
+// Quick hold gesture for adding actions to an imageview in a collection view cell
+// Used to save images
+// Allows for skipping selector, can be used in cellforitem
+extension UIImageView {
+    
+    fileprivate struct HoldAssociatedObjectKeys {
+        static var holdGestureRecognizer = "MediaViewerAssociatedObjectKey_mediaViewer"
+    }
+    
+    fileprivate typealias HoldAction = (() -> Void)?
+    
+    fileprivate var holdGestureRecognizerAction: Action? {
+        set {
+            if let newValue = newValue {
+                objc_setAssociatedObject(self, &HoldAssociatedObjectKeys.holdGestureRecognizer, newValue, objc_AssociationPolicy.OBJC_ASSOCIATION_RETAIN)
+            }
+        }
+        get {
+            let holdGestureRecognizerActionInstance = objc_getAssociatedObject(self, &HoldAssociatedObjectKeys.holdGestureRecognizer) as? Action
+            return holdGestureRecognizerActionInstance
+        }
+    }
+    
+    public func addHoldGestureRecognizer(action: (() -> Void)?) {
+        self.isUserInteractionEnabled = true
+        self.holdGestureRecognizerAction = action
+        let holdGestureRecognizer = UILongPressGestureRecognizer(target: self, action: #selector(handleHoldGesture))
+        holdGestureRecognizer.allowableMovement = 5.0
+        holdGestureRecognizer.minimumPressDuration = 0.5
+        self.addGestureRecognizer(holdGestureRecognizer)
+    }
+    
+    @objc fileprivate func handleHoldGesture(sender: UITapGestureRecognizer) {
+        if let action = self.holdGestureRecognizerAction {
+            action?()
+        } else {
+            print("no action")
+        }
+    }
+    
+}
+
 
