@@ -238,17 +238,21 @@ class TopPosts: UIViewController, UICollectionViewDelegateFlowLayout, UICollecti
                 
                 let imageToCache = UIImage(data: data!)
                 
+                // If this is a thumbnail, cache it to the thumbnail storage
                 if type == "thumbnail" {
                     
                     self.thumbnailCache.setObject(imageToCache!, forKey: urlString as NSString)
                     
                     self.postCollectionView.reloadData()
                     
+                // If this is a full size image, cache it to the full image storage, then display the image
+                // When the type is a postimage, this function is firing when a user wants to view an image
+                // Postimage type means that its full url is an image not a link
                 } else if type == "postimage" {
                     
                     self.postCache.setObject(imageToCache!, forKey: urlString as NSString)
                     
-                    // display image
+                    // Expand Cell and Display Image
                     self.postCollectionView.scrollToItem(at: self.selectedItem, at: .top, animated: true)
                     self.postCollectionView.reloadData()
                 }
@@ -317,7 +321,7 @@ class TopPosts: UIViewController, UICollectionViewDelegateFlowLayout, UICollecti
                 }
     }
     
-    
+    // Used to go to a safari extension to view a link or image
     func goTo(urlString: String) {
             let config = SFSafariViewController.Configuration()
             config.entersReaderIfAvailable = true
@@ -326,9 +330,6 @@ class TopPosts: UIViewController, UICollectionViewDelegateFlowLayout, UICollecti
             present(vc, animated: true)
     }
     
-    
-    
-    
     override func viewDidLoad() {
         super.viewDidLoad()
 
@@ -336,6 +337,7 @@ class TopPosts: UIViewController, UICollectionViewDelegateFlowLayout, UICollecti
         
         getPosts(subreddit: "all", filter: "top", limit: 10, after: "", count: 0)
         
+            // Notification that manages when the app will re-enter the foreground
             NotificationCenter.default.addObserver(self, selector: #selector(willEnterForeground), name: .UIApplicationWillEnterForeground, object: nil)
     }
     
@@ -369,7 +371,8 @@ class TopPosts: UIViewController, UICollectionViewDelegateFlowLayout, UICollecti
         }
     }
     
-    
+    // The function handle that fires when the app re-enters the foreground
+    // If necesarry, this will get a new access token if expired, then reload collection view with new posts
     @objc func willEnterForeground() {
         
         // Clear old posts
@@ -392,7 +395,7 @@ class TopPosts: UIViewController, UICollectionViewDelegateFlowLayout, UICollecti
     }
     
     
-    
+    // Gets a new access token
     func reloadSession() {
         
         // Used for devide ID for OAuth
@@ -483,27 +486,34 @@ class TopPosts: UIViewController, UICollectionViewDelegateFlowLayout, UICollecti
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "Cell", for: indexPath) as! postCell
 
+        // Set title text and height based on title length
         cell.titleLabel.text = (posts[indexPath.item]["title"]! as! String)
-        
         cell.titleHeight.constant = (posts[indexPath.item]["title"]! as! String).height(withConstrainedWidth: cell.frame.width*0.8, font: cell.titleLabel.font!)
         
+        // Set author text and height based on author length
         cell.authorLabel.text =  "by: \(posts[indexPath.item]["author"]! as! String)"
-        
         cell.authorHeight.constant = (posts[indexPath.item]["author"]! as! String).height(withConstrainedWidth: cell.frame.width*0.8, font: cell.authorLabel.font!)
         
+        // Set the comment number
         cell.commentLabel.text = "\(posts[indexPath.item]["comment"]! as! Int)"
         
+        // Set the time, if 1 use hour, if greater than 1 use hours
         if posts[indexPath.item]["time"] as! Int == 1 {
             cell.timeLabel.text = "\(posts[indexPath.item]["time"] as! Int) hour ago"
         } else {
             cell.timeLabel.text = "\(posts[indexPath.item]["time"] as! Int) hours ago"
         }
         
+        // Set both constants of urls, fullImageURL may just be a link
         let thumbnailURL = posts[indexPath.item]["thumbnailURL"]! as! String
         let fullImageURL = posts[indexPath.item]["imageURL"]! as! String
         
+        // Check to see if the post has a thumbnail
+        // Other options if no thumbnail are NSFW, Self, and Default
+        // This check won't show posts that do not have a safe thumbnail
         if thumbnailURL.starts(with: "http") {
             
+            // If selected, expand cell with cached image
             if self.selectedItem == indexPath {
                 if postCache.object(forKey: fullImageURL as NSString) != nil {
                     cell.postImageView.image = postCache.object(forKey: fullImageURL as NSString)
@@ -519,9 +529,11 @@ class TopPosts: UIViewController, UICollectionViewDelegateFlowLayout, UICollecti
             cell.postImageView.image = UIImage()
         }
         
-        
+        // If there is an image allow interactions with the imageView
+        // If no image, it is empty, but this is an extra precaution
         if cell.postImageView.image?.size != CGSize.zero {
             
+            // When an image is tapped
             cell.postImageView.addTapGestureRecognizer(action: {
                 
                 var cached = Bool()
@@ -529,6 +541,7 @@ class TopPosts: UIViewController, UICollectionViewDelegateFlowLayout, UICollecti
                 var url = String()
                 var fullurl = String()
                 
+                // Check if the full image is an image or a link
                 if fullImageURL.contains(".jpg") == true {
                     // use full image url, check if cached
                     if self.postCache.object(forKey: fullImageURL as NSString) != nil {
@@ -538,6 +551,7 @@ class TopPosts: UIViewController, UICollectionViewDelegateFlowLayout, UICollecti
                         fullurl = fullImageURL
 
                     } else {
+                        // Not cached, will need to download the image
                         cached = false
                         type = "postimage"
                         url = fullImageURL
@@ -554,25 +568,30 @@ class TopPosts: UIViewController, UICollectionViewDelegateFlowLayout, UICollecti
                 
                 if type == "postimage" {
                     
+                    // If the cell is already expanded, tapping will offer a save option or go to link
                     if indexPath == self.selectedItem {
                         self.handleImageHold(url: fullImageURL, image: cell.postImageView.image!, type: "postimage")
                     } else {
+                        // expand cell
                         self.selectedItem = indexPath
                         collectionView.reloadData()
                     }
                     
                 }
+                // Handle image based on caching, type, and pass both the fullurl and thumbnail url
+                // In some cases, the url will be the same as the fullurl
                 self.handleViewImage(cached: cached, type: type, url: url, fullurl: fullurl)
             })
             
+            // When an image is held down
             cell.postImageView.addHoldGestureRecognizer(action: {
                 
+                // Set the type of image for the save image/thumbnail option
                 if indexPath == self.selectedItem {
                     self.handleImageHold(url: fullImageURL, image: cell.postImageView.image!, type: "postimage")
                 } else {
                     self.handleImageHold(url: fullImageURL, image: cell.postImageView.image!, type: "thumbnail")
                 }
-                
             })
             
         }
@@ -584,21 +603,27 @@ class TopPosts: UIViewController, UICollectionViewDelegateFlowLayout, UICollecti
     
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
         
+        // Set the titleHeight of the title based on its width and font
         let titleHeight = (posts[indexPath.item]["title"]! as! String).height(withConstrainedWidth: self.view.frame.width*0.8, font: postCell().titleLabel.font!)
         
         let urlString = posts[indexPath.item]["thumbnailURL"]! as! String
         
+        // Check if there is an image
         if urlString.starts(with: "http") {
             
             let imageHeight = posts[indexPath.item]["thumbnailHeight"]! as! CGFloat
 
+            // Expand cell if it is the selected cell
             if indexPath == self.selectedItem {
+                // expanded cell
                 return CGSize(width: self.view.frame.width, height: self.collectionViewContainer.frame.height-20)
             } else {
+                // Cell that is not expanded, but has an image
                 return CGSize(width: self.view.frame.width, height: 100+titleHeight+imageHeight)
             }
 
         } else {
+            // Height of post with no image, just based on titleHeight
             return CGSize(width: self.view.frame.width, height: 100+titleHeight)
         }
         
@@ -676,6 +701,7 @@ class postCell: UICollectionViewCell {
         return label
     }()
     
+    // ImageView to hold the post image
     var postImageView: UIImageView = {
         let imageView = UIImageView()
         imageView.backgroundColor = .clear
@@ -702,14 +728,14 @@ class postCell: UICollectionViewCell {
         addSubview(timeLabel)
         addSubview(postImageView)
         
-        // Title Contraints
+        // Title Contraints, title height will be updated later so it is stored as a contraint in the cell
         let titleLabelCenterX = NSLayoutConstraint(item: titleLabel, attribute: .centerX, relatedBy: .equal, toItem: self, attribute: .centerX, multiplier: 1.0, constant: 0.0)
         let titleLabelTop = NSLayoutConstraint(item: titleLabel, attribute: .top, relatedBy: .equal, toItem: self, attribute: .top, multiplier: 1.0, constant: 5.0)
         let titleLabelWidth = NSLayoutConstraint(item: titleLabel, attribute: .width, relatedBy: .equal, toItem: self, attribute: .width, multiplier: 0.8, constant: 0.0)
         titleHeight = titleLabel.heightAnchor.constraint(equalToConstant: 18)
         NSLayoutConstraint.activate([titleLabelCenterX, titleLabelTop, titleLabelWidth, titleHeight])
         
-        // Author Contraints
+        // Author Contraints, author height will be updated later so it is stored as a contraint in the cell
         let authorLabelCenterX = NSLayoutConstraint(item: authorLabel, attribute: .centerX, relatedBy: .equal, toItem: self, attribute: .centerX, multiplier: 1.0, constant: 0.0)
         let authorLabelTop = NSLayoutConstraint(item: authorLabel, attribute: .top, relatedBy: .equal, toItem: titleLabel, attribute: .bottom, multiplier: 1.0, constant: 0.0)
         let authorLabelWidth = NSLayoutConstraint(item: authorLabel, attribute: .width, relatedBy: .equal, toItem: self, attribute: .width, multiplier: 0.8, constant: 0.0)
