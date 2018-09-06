@@ -294,9 +294,9 @@ class TopPosts: UIViewController, UICollectionViewDelegateFlowLayout, UICollecti
         
                 var text = ""
                 if type == "thumbnail" {
-                    text = "Save thumbnail"
+                    text = "Save Thumbnail"
                 } else {
-                    text = "Save image"
+                    text = "Save Image"
                 }
         
                 let saveImage = UIAlertAction(title: "\(text)", style: .default) { (action) in
