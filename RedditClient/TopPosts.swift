@@ -261,7 +261,7 @@ class TopPosts: UIViewController, UICollectionViewDelegateFlowLayout, UICollecti
     // When an image is tapped, check to see if its a thumbnail or a postimage to get the proper URL
     // if it is a post image: check cache, if it is cached, view image, if not, download then view
     // if it is a thumbnail, view image
-    @objc func handleViewImage(cached: Bool, type: String, url: String) {
+    @objc func handleViewImage(cached: Bool, type: String, url: String, fullurl: String) {
         
         if cached == true {
             
@@ -270,7 +270,7 @@ class TopPosts: UIViewController, UICollectionViewDelegateFlowLayout, UICollecti
                 self.postCollectionView.reloadData()
             } else if type == "thumbnail" {
                 let image = thumbnailCache.object(forKey: url as NSString)
-                handleImageHold(url: url, image: image!, type: "thumbnail")
+                handleImageHold(url: fullurl, image: image!, type: "thumbnail")
             }
             
         } else {
@@ -375,6 +375,7 @@ class TopPosts: UIViewController, UICollectionViewDelegateFlowLayout, UICollecti
         // Clear old posts
         posts.removeAll(keepingCapacity: true)
         self.navFifty.text = "0"
+        self.selectedItem = IndexPath()
         postCollectionView.reloadData()
         
         let now = Date().timeIntervalSince1970
@@ -484,7 +485,11 @@ class TopPosts: UIViewController, UICollectionViewDelegateFlowLayout, UICollecti
 
         cell.titleLabel.text = (posts[indexPath.item]["title"]! as! String)
         
+        cell.titleHeight.constant = (posts[indexPath.item]["title"]! as! String).height(withConstrainedWidth: cell.frame.width*0.8, font: cell.titleLabel.font!)
+        
         cell.authorLabel.text =  "by: \(posts[indexPath.item]["author"]! as! String)"
+        
+        cell.authorHeight.constant = (posts[indexPath.item]["author"]! as! String).height(withConstrainedWidth: cell.frame.width*0.8, font: cell.authorLabel.font!)
         
         cell.commentLabel.text = "\(posts[indexPath.item]["comment"]! as! Int)"
         
@@ -522,6 +527,7 @@ class TopPosts: UIViewController, UICollectionViewDelegateFlowLayout, UICollecti
                 var cached = Bool()
                 var type = String()
                 var url = String()
+                var fullurl = String()
                 
                 if fullImageURL.contains(".jpg") == true {
                     // use full image url, check if cached
@@ -529,23 +535,34 @@ class TopPosts: UIViewController, UICollectionViewDelegateFlowLayout, UICollecti
                         cached = true
                         type = "postimage"
                         url = fullImageURL
+                        fullurl = fullImageURL
+
                     } else {
                         cached = false
                         type = "postimage"
                         url = fullImageURL
+                        fullurl = fullImageURL
                     }
                 } else {
                     // use thumbnail, already cached
                     cached = true
                     type = "thumbnail"
                     url = thumbnailURL
+                    fullurl = fullImageURL
+
                 }
                 
-                self.selectedItem = indexPath
                 if type == "postimage" {
-                    collectionView.reloadData()
+                    
+                    if indexPath == self.selectedItem {
+                        self.handleImageHold(url: fullImageURL, image: cell.postImageView.image!, type: "postimage")
+                    } else {
+                        self.selectedItem = indexPath
+                        collectionView.reloadData()
+                    }
+                    
                 }
-                self.handleViewImage(cached: cached, type: type, url: url)
+                self.handleViewImage(cached: cached, type: type, url: url, fullurl: fullurl)
             })
             
             cell.postImageView.addHoldGestureRecognizer(action: {
@@ -602,6 +619,10 @@ class TopPosts: UIViewController, UICollectionViewDelegateFlowLayout, UICollecti
 
 class postCell: UICollectionViewCell {
     
+    // Title and Author Height Contraints
+    var titleHeight = NSLayoutConstraint()
+    var authorHeight = NSLayoutConstraint()
+
     // Label to display title
     var titleLabel: UILabel = {
         let label = UILabel()
@@ -657,7 +678,7 @@ class postCell: UICollectionViewCell {
     
     var postImageView: UIImageView = {
         let imageView = UIImageView()
-        imageView.backgroundColor = .white
+        imageView.backgroundColor = .clear
         imageView.contentMode = .scaleAspectFit
         imageView.translatesAutoresizingMaskIntoConstraints = false
         return imageView
@@ -685,13 +706,15 @@ class postCell: UICollectionViewCell {
         let titleLabelCenterX = NSLayoutConstraint(item: titleLabel, attribute: .centerX, relatedBy: .equal, toItem: self, attribute: .centerX, multiplier: 1.0, constant: 0.0)
         let titleLabelTop = NSLayoutConstraint(item: titleLabel, attribute: .top, relatedBy: .equal, toItem: self, attribute: .top, multiplier: 1.0, constant: 5.0)
         let titleLabelWidth = NSLayoutConstraint(item: titleLabel, attribute: .width, relatedBy: .equal, toItem: self, attribute: .width, multiplier: 0.8, constant: 0.0)
-        NSLayoutConstraint.activate([titleLabelCenterX, titleLabelTop, titleLabelWidth])
+        titleHeight = titleLabel.heightAnchor.constraint(equalToConstant: 18)
+        NSLayoutConstraint.activate([titleLabelCenterX, titleLabelTop, titleLabelWidth, titleHeight])
         
         // Author Contraints
         let authorLabelCenterX = NSLayoutConstraint(item: authorLabel, attribute: .centerX, relatedBy: .equal, toItem: self, attribute: .centerX, multiplier: 1.0, constant: 0.0)
         let authorLabelTop = NSLayoutConstraint(item: authorLabel, attribute: .top, relatedBy: .equal, toItem: titleLabel, attribute: .bottom, multiplier: 1.0, constant: 0.0)
         let authorLabelWidth = NSLayoutConstraint(item: authorLabel, attribute: .width, relatedBy: .equal, toItem: self, attribute: .width, multiplier: 0.8, constant: 0.0)
-        NSLayoutConstraint.activate([authorLabelCenterX, authorLabelTop, authorLabelWidth])
+        authorHeight = authorLabel.heightAnchor.constraint(equalToConstant: 18)
+        NSLayoutConstraint.activate([authorLabelCenterX, authorLabelTop, authorLabelWidth, authorHeight])
         
         // Comment Image Contraints
         let commentImageViewLeft = NSLayoutConstraint(item: commentImageView, attribute: .left, relatedBy: .equal, toItem: self, attribute: .left, multiplier: 1.0, constant: 5.0)
